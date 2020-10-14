@@ -1,0 +1,3 @@
+[submodule "chipcalc_native_rust"]
+	path = chipcalc_native_rust
+	url = https://github.com/djdisodo/chipcalc_native_rust.git
