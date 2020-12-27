@@ -7,7 +7,7 @@ use chipcalc_native_rust::chip::Chip;
 use chipcalc_native_rust::shape::Shape;
 use chipcalc_native_rust::matrix::MatrixRotation;
 use num_traits::cast::FromPrimitive;
-use std::collections::VecDeque;
+use std::collections::{VecDeque, HashMap};
 use std::iter::FromIterator;
 use std::time::Instant;
 use std::ops::Deref;
@@ -34,31 +34,32 @@ fn main() {
     for (key, x) in chip_datas {
         chip_ids.push(x["id"].as_str().unwrap().parse().unwrap());
         let a = x["shape_info"].as_str().unwrap().to_owned();
-        let mut b = a.split(",");
-        let shape: Shape = Shape::from_u32(x["grid_id"].as_str().unwrap().parse().unwrap()).unwrap();
+        let mut b = Shape::from_u32(x["grid_id"].as_str().unwrap().parse().unwrap()).unwrap();
+
         let rank: u8 = x["chip_id"].as_str().unwrap()[0..1].parse().unwrap();
         let color: u8 = x["color_id"].as_str().unwrap().parse().unwrap();
-        if rank < min_rank {
+        if b.get_size() < min_rank as usize {
             continue;
         }
         if filter_color != color {
             continue;
         }
-        chips.push(Chip::new(
-            shape,
-            MatrixRotation::from_u32(b.next().unwrap().parse().unwrap()).unwrap()));
+        let chip = Chip::from_json(x).unwrap();
+        chips.push(chip);
     }
-    println!("계산시작");
-    let queue = VecDeque::from_iter(0..chips.len());
-    let job = CalculationJob::new(canvas, &chips, queue, Vec::new(), Config {
-        max_left_space,
-        rotate: rotation,
-        allow_space
+    println!("계산시작 칩갯수: {}", chips.len());
+    for chip in &chips {
+        println!("chip_shape: {:?}", chip.shape);
+    }
+    let job = CalculationJob::new(canvas, &chips, 0, Default::default(),  Config {
+        min_chip_size: min_rank,
+        rotate: rotation
     });
     let mut sub_jobs: Vec<CalculationJob> = Vec::new();
 	for x in job.generate_jobs() {
-		let mut a: Vec<CalculationJob> = x.generate_jobs().collect();
-		sub_jobs.append(&mut a);
+		//let mut a: Vec<CalculationJob> = x.generate_jobs().collect();
+		//sub_jobs.append(&mut a);
+        sub_jobs.push(x);
 	}
     println!("generated jobs {}", sub_jobs.len());
 
@@ -71,6 +72,7 @@ fn main() {
     let mut l_done = 0;
 
     println!("space: {}", space);
+	let mut d = 0;
     for x in sub_jobs {
 
         if Instant::now().duration_since(i).as_secs() > 1 {
@@ -81,20 +83,24 @@ fn main() {
             l_done = done;
         }
         done += 1;
-        for x in x.calculate() {
+        if let Some(result) = x.calculate() {
+            for x in result {
 
-            let mut left_size = space;
-            for y in &x {
-                left_size -= chips[y.0].get_size() as u8;
-            }
-            if left_size <= max_left_space {
-                println!("----------------");
-
-                for (id, pos, rot) in x {
-                    println!("id: {}, pos: {} {}, rot: {:?}, chip_shape: {:?}", chip_ids[id], pos.x, pos.y, rot, chips[id].deref());
+                let mut left_size = space;
+                for y in &*x {
+                    left_size -= chips[y.chip_index].get_size() as u8;
                 }
-            }
+                if left_size <= max_left_space {
+                    println!("----------------");
+                    d += 1;
+                    for chip in &*x {
+                        println!("id: {}, pos: {} {}, rot: {:?}, chip_shape: {:?}", chip.chip_index, chip.position.x, chip.position.y, chip.rotation, chips[chip.chip_index].deref());
+                    }
+                }
 
+            }
         }
+
     }
+	println!("d: {}", d);
 }
