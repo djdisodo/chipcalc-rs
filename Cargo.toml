@@ -10,9 +10,3 @@ edition = "2018"
 serde_json = "1.0"
 chipcalc_native_rust = { path = "chipcalc_native_rust" }
 num-traits = "0.2"
-chrono = "0.4"
-
-[dependencies.cursive]
-git = "https://github.com/gyscos/cursive"
-default-features = false
-features = ["crossterm-backend"]

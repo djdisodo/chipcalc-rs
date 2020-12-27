@@ -49,7 +49,7 @@ fn main() {
     }
     println!("계산시작 칩갯수: {}", chips.len());
     for chip in &chips {
-        println!("chip_shape: {:?}", chip.shape);
+        println!("chip_shape: {:?}; {}", chip.shape, chip.get_max_rotation());
     }
     let job = CalculationJob::new(canvas, &chips, 0, Default::default(),  Config {
         min_chip_size: min_rank,
@@ -83,24 +83,19 @@ fn main() {
             l_done = done;
         }
         done += 1;
-        if let Some(result) = x.calculate() {
-            for x in result {
-
-                let mut left_size = space;
-                for y in &*x {
-                    left_size -= chips[y.chip_index].get_size() as u8;
-                }
-                if left_size <= max_left_space {
-                    println!("----------------");
-                    d += 1;
-                    for chip in &*x {
-                        println!("id: {}, pos: {} {}, rot: {:?}, chip_shape: {:?}", chip.chip_index, chip.position.x, chip.position.y, chip.rotation, chips[chip.chip_index].deref());
-                    }
-                }
-
+        x.calculate(&mut | x | {
+            let mut left_size = space;
+            for y in &*x {
+                left_size -= chips[y.chip_index].get_size() as u8;
             }
-        }
-
+            if left_size <= max_left_space {
+                println!("----------------");
+                d += 1;
+                for chip in &*x {
+                    println!("id: {}, pos: {} {}, rot: {:?}, chip_shape: {:?}", chip.chip_index, chip.position.x, chip.position.y, chip.rotation, chips[chip.chip_index].deref());
+                }
+            }
+        });
     }
 	println!("d: {}", d);
 }
