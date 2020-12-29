@@ -1,5 +1,5 @@
 use std::env;
-use chipcalc_native_rust::calculation::{Board, CalculationJob, Config};
+use chipcalc_native_rust::calculation::{Board, CalculationJob, Config, CalculationResult};
 use std::str::FromStr;
 use serde_json::Value;
 use std::fs::File;
@@ -38,7 +38,7 @@ fn main() {
 
         let rank: u8 = x["chip_id"].as_str().unwrap()[0..1].parse().unwrap();
         let color: u8 = x["color_id"].as_str().unwrap().parse().unwrap();
-        if b.get_size() < min_rank as usize {
+        if b.get_size() < min_rank {
             continue;
         }
         if filter_color != color {
@@ -51,7 +51,8 @@ fn main() {
     for chip in &chips {
         println!("chip_shape: {:?}; {}", chip.shape, chip.get_max_rotation());
     }
-    let job = CalculationJob::new(canvas, &chips, 0, Default::default(),  Config {
+    let base = CalculationResult::new(&canvas);
+    let job = CalculationJob::new(canvas, &chips, base,  Config {
         min_chip_size: min_rank,
         rotate: rotation
     });
